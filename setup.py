@@ -52,6 +52,7 @@ setup(
     ],
     test_suite='testrunner.run_tests',
     install_requires=[
+        'dill>0.2.0,<0.3',
         'django-appconf>=0.5',
         'pilkit>=0.2.0',
         'six',
