@@ -2,6 +2,7 @@ from ..utils import get_singleton, get_cache, sanitize_cache_key
 import warnings
 from copy import copy
 from django.core.exceptions import ImproperlyConfigured
+from django.conf import settings
 
 
 class CacheFileState(object):
@@ -74,7 +75,7 @@ class CachedFileBackend(object):
         if state == CacheFileState.DOES_NOT_EXIST:
             self.cache.set(key, state, self.existence_check_timeout)
         else:
-            self.cache.set(key, state)
+            self.cache.set(key, state, settings.IMAGEKIT_CACHE_TIMEOUT)
 
     def __getstate__(self):
         state = copy(self.__dict__)
@@ -109,7 +110,7 @@ class Simple(CachedFileBackend):
 
     def _exists(self, file):
         return bool(getattr(file, '_file', None)
-                    or file.storage.exists(file.name))
+                    or (file.name and file.storage.exists(file.name)))
 
 
 def _generate_file(backend, file, force=False):

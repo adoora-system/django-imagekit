@@ -72,14 +72,32 @@ def autodiscover():
     if _autodiscovered:
         return
 
+    try:
+        from django.utils.module_loading import autodiscover_modules
+    except ImportError:
+        # Django<1.7
+        _autodiscover_modules_fallback()
+    else:
+        autodiscover_modules('imagegenerators')
+    _autodiscovered = True
+
+
+def _autodiscover_modules_fallback():
+    """
+    Auto-discover INSTALLED_APPS imagegenerators.py modules and fail silently
+    when not present. This forces an import on them to register any admin bits
+    they may want.
+
+    Copied from django.contrib.admin
+
+    Used for Django versions < 1.7
+    """
     from django.conf import settings
     try:
         from importlib import import_module
     except ImportError:
         from django.utils.importlib import import_module
     from django.utils.module_loading import module_has_submodule
-
-    _autodiscovered = True
 
     for app in settings.INSTALLED_APPS:
         # As of Django 1.7, settings.INSTALLED_APPS may contain classes instead of modules, hence the try/except
@@ -148,14 +166,15 @@ def call_strategy_method(file, method_name):
         fn(file)
 
 
-def get_cache(backend=settings.IMAGEKIT_CACHE_BACKEND):
+def get_cache():
     try:
         from django.core.cache import caches
     except ImportError:
+        # Django < 1.7
         from django.core.cache import get_cache
-        return get_cache(backend)
+        return get_cache(settings.IMAGEKIT_CACHE_BACKEND)
 
-    return caches[backend]
+    return caches[settings.IMAGEKIT_CACHE_BACKEND]
 
 
 def sanitize_cache_key(key):

@@ -145,18 +145,24 @@ class ImageSpec(BaseImageSpec):
 
         # TODO: Move into a generator base class
         # TODO: Factor out a generate_image function so you can create a generator and only override the PIL.Image creating part. (The tricky part is how to deal with original_format since generator base class won't have one.)
+
+        closed = self.source.closed
+        if closed:
+            # Django file object should know how to reopen itself if it was closed
+            # https://code.djangoproject.com/ticket/13750
+            self.source.open()
+
         try:
             img = open_image(self.source)
-        except ValueError:
-
-            # Re-open the file -- https://code.djangoproject.com/ticket/13750
-            self.source.open()
-            img = open_image(self.source)
-
-        new_image =  process_image(img, processors=self.processors,
-                                   format=self.format, autoconvert=self.autoconvert,
-                                   options=self.options)
-        self.source.close()
+            new_image = process_image(img,
+                                      processors=self.processors,
+                                      format=self.format,
+                                      autoconvert=self.autoconvert,
+                                      options=self.options)
+        finally:
+            if closed:
+                # We need to close the file if it was opened by us
+                self.source.close()
         return new_image
 
 
